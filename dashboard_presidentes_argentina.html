@@ -1,0 +1,528 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Presidentes Argentinos</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --card:#121a2a;
+      --muted:#9fb0c6;
+      --text:#eaf2ff;
+      --accent:#6ee7b7;
+      --accent2:#60a5fa;
+      --danger:#fb7185;
+      --warning:#fbbf24;
+      --line:#24324b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(900px 600px at 15% 10%, rgba(96,165,250,.22), transparent 55%),
+                  radial-gradient(900px 600px at 80% 0%, rgba(110,231,183,.18), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:28px 20px 18px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      position:sticky; top:0;
+      backdrop-filter: blur(10px);
+      background: rgba(11,15,25,.75);
+      z-index:10;
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:0 10px;}
+    .top{
+      display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
+    }
+    h1{margin:0; font-size:20px; letter-spacing:.2px;}
+    .subtitle{margin:6px 0 0; color:var(--muted); font-size:13px;}
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    }
+    select, input[type="search"]{
+      background: rgba(18,26,42,.9);
+      color: var(--text);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding:10px 12px;
+      outline:none;
+      box-shadow: none;
+      min-width: 180px;
+    }
+    .btn{
+      background: linear-gradient(135deg, rgba(96,165,250,.95), rgba(110,231,183,.95));
+      color:#06101d;
+      border:none;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    main{padding:18px 20px 44px;}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:14px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr;}
+    }
+    .section{
+      background: rgba(18,26,42,.86);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+    .section h2{
+      margin:0 0 10px;
+      font-size:16px;
+      letter-spacing:.2px;
+    }
+    .muted{color:var(--muted)}
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+      margin-top: 12px;
+    }
+    @media (max-width: 980px){
+      .kpis{grid-template-columns: repeat(2, 1fr);}
+    }
+    .kpi{
+      background: rgba(11,15,25,.6);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: 16px;
+      padding:14px;
+    }
+    .kpi .label{color:var(--muted); font-size:12px;}
+    .kpi .value{font-size:22px; font-weight:800; margin-top:6px;}
+    .kpi .note{color:var(--muted); font-size:12px; margin-top:6px;}
+    .two{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 980px){
+      .two{grid-template-columns:1fr;}
+    }
+    canvas{
+      width:100% !important;
+      height:290px !important;
+    }
+    .timeline{
+      display:grid;
+      gap:10px;
+      margin-top:12px;
+      max-height: 340px;
+      overflow:auto;
+      padding-right: 6px;
+    }
+    .tl-item{
+      display:grid;
+      grid-template-columns: 90px 1fr;
+      gap:12px;
+      align-items:start;
+      padding:12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(11,15,25,.55);
+    }
+    .tl-years{
+      font-weight:800;
+      color: var(--accent2);
+      font-size: 13px;
+    }
+    .tl-title{
+      margin:0;
+      font-weight:800;
+      font-size: 14px;
+    }
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border:1px solid rgba(255,255,255,.08);
+      margin-top:8px;
+      color: var(--muted);
+    }
+    .dot{width:8px; height:8px; border-radius:999px; display:inline-block;}
+    .dot.ok{background: var(--accent);}
+    .dot.bad{background: var(--danger);}
+    .dot.neu{background: var(--accent2);}
+    .conclusions{
+      display:grid;
+      gap:10px;
+      margin-top:10px;
+    }
+    .callout{
+      background: rgba(11,15,25,.6);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .small{font-size:12px;}
+    .foot{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    code.inline{
+      background: rgba(255,255,255,.06);
+      padding:2px 6px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #d6e6ff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <div>
+          <h1>Dashboard — Presidentes Argentinos (demo)</h1>
+          <div class="subtitle">Ejemplo de uso de datos + visualización (y espacio para análisis asistido por IA).</div>
+        </div>
+        <div class="controls">
+          <input id="q" type="search" placeholder="Buscar presidente…" />
+          <select id="tipo">
+            <option value="Todos">Tipo de gobierno: Todos</option>
+            <option value="Democrático">Democrático</option>
+            <option value="De facto">De facto</option>
+          </select>
+          <select id="mandato">
+            <option value="Todos">Mandato: Todos</option>
+            <option value="Completo">Completo</option>
+            <option value="Interrumpido">Interrumpido</option>
+          </select>
+          <button class="btn" id="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- GENERAL -->
+    <section class="section">
+      <h2>General</h2>
+      <div class="muted small">
+        Esta plantilla viene con un dataset mínimo de ejemplo (1916–2023). Podés editar el array <code class="inline">data</code> en el código y ampliar la tabla.
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="label">Total de mandatos (filtrados)</div>
+          <div class="value" id="kpi_total">—</div>
+          <div class="note">Cuenta de filas que cumplen filtros</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Mandatos completos</div>
+          <div class="value" id="kpi_completo">—</div>
+          <div class="note">Mayor estabilidad institucional</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Mandatos interrumpidos</div>
+          <div class="value" id="kpi_interrumpido">—</div>
+          <div class="note">Riesgo de inestabilidad</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Duración promedio</div>
+          <div class="value" id="kpi_promedio">—</div>
+          <div class="note">Años (aprox.) por mandato</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid" style="margin-top:14px;">
+      <!-- EXPLORACIÓN DE DATOS -->
+      <section class="section">
+        <h2>Exploración de datos</h2>
+        <div class="two">
+          <div class="section" style="padding:14px;">
+            <h2 style="margin:0 0 8px;">Mandatos completos vs interrumpidos</h2>
+            <canvas id="pieMandato"></canvas>
+          </div>
+          <div class="section" style="padding:14px;">
+            <h2 style="margin:0 0 8px;">Duración de mandatos (años)</h2>
+            <canvas id="barDuracion"></canvas>
+          </div>
+        </div>
+
+        <div class="section" style="padding:14px; margin-top:14px;">
+          <h2 style="margin:0 0 8px;">Mandatos por década</h2>
+          <div class="muted small">Útil para ver concentraciones de cambios/inestabilidad.</div>
+          <canvas id="lineDecadas" style="height:260px !important;"></canvas>
+        </div>
+      </section>
+
+      <!-- TIMELINE -->
+      <section class="section">
+        <h2>Exploración rápida</h2>
+        <div class="muted small">Línea de tiempo (simplificada) con etiquetas de tipo de gobierno y mandato.</div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+    </div>
+
+    <!-- CONCLUSIONES -->
+    <section class="section" style="margin-top:14px;">
+      <h2>Conclusiones</h2>
+      <div class="muted small">
+        Este bloque se completa con lectura crítica (y, si se desea, apoyo de IA para redactar). La IA no “decide”: ayuda a sintetizar patrones a partir de datos.
+      </div>
+
+      <div class="conclusions">
+        <div class="callout">
+          <strong>Hallazgo 1 (ejemplo):</strong>
+          <div class="muted" id="c1">—</div>
+        </div>
+        <div class="callout">
+          <strong>Hallazgo 2 (ejemplo):</strong>
+          <div class="muted" id="c2">—</div>
+        </div>
+        <div class="callout">
+          <strong>Recomendación didáctica:</strong>
+          <div class="muted">
+            Pedir a estudiantes que expliquen <em>qué variable</em> eligieron, <em>por qué</em>, y qué limitaciones tiene el dataset. Eso preserva autoría y pensamiento crítico.
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        Nota: si lo usás en un trabajo, agregá la fuente de datos (p. ej., Presidencia/AGN/Datos Abiertos) y aclaración metodológica.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ====== DATASET DE EJEMPLO (editá/extendé esto) ======
+    // Campos: presidente, inicio, fin, tipo, mandato, partido
+    const data = [
+      { presidente:"Hipólito Yrigoyen", inicio:1916, fin:1922, tipo:"Democrático", mandato:"Completo", partido:"UCR" },
+      { presidente:"Hipólito Yrigoyen", inicio:1928, fin:1930, tipo:"Democrático", mandato:"Interrumpido", partido:"UCR" },
+      { presidente:"Agustín P. Justo", inicio:1932, fin:1938, tipo:"Democrático", mandato:"Completo", partido:"Concordancia" },
+      { presidente:"Juan D. Perón", inicio:1946, fin:1952, tipo:"Democrático", mandato:"Completo", partido:"PJ" },
+      { presidente:"Juan D. Perón", inicio:1952, fin:1955, tipo:"Democrático", mandato:"Interrumpido", partido:"PJ" },
+      { presidente:"Arturo Frondizi", inicio:1958, fin:1962, tipo:"Democrático", mandato:"Interrumpido", partido:"UCRI" },
+      { presidente:"Arturo Illia", inicio:1963, fin:1966, tipo:"Democrático", mandato:"Interrumpido", partido:"UCRP" },
+      { presidente:"Raúl Alfonsín", inicio:1983, fin:1989, tipo:"Democrático", mandato:"Completo", partido:"UCR" },
+      { presidente:"Carlos Menem", inicio:1989, fin:1999, tipo:"Democrático", mandato:"Completo", partido:"PJ" },
+      { presidente:"Fernando de la Rúa", inicio:1999, fin:2001, tipo:"Democrático", mandato:"Interrumpido", partido:"Alianza" },
+      { presidente:"Néstor Kirchner", inicio:2003, fin:2007, tipo:"Democrático", mandato:"Completo", partido:"PJ" },
+      { presidente:"Cristina Fernández", inicio:2007, fin:2015, tipo:"Democrático", mandato:"Completo", partido:"PJ" },
+      { presidente:"Mauricio Macri", inicio:2015, fin:2019, tipo:"Democrático", mandato:"Completo", partido:"PRO" },
+      { presidente:"Alberto Fernández", inicio:2019, fin:2023, tipo:"Democrático", mandato:"Completo", partido:"PJ" }
+    ];
+
+    // ====== HELPERS ======
+    const years = (row) => Math.max(0, (row.fin - row.inicio));
+    const decade = (y) => Math.floor(y / 10) * 10;
+    const fmt = (n) => new Intl.NumberFormat("es-AR").format(n);
+
+    function applyFilters(){
+      const q = document.getElementById("q").value.trim().toLowerCase();
+      const tipo = document.getElementById("tipo").value;
+      const mandato = document.getElementById("mandato").value;
+
+      return data.filter(r => {
+        const okQ = !q || r.presidente.toLowerCase().includes(q);
+        const okT = (tipo==="Todos") || (r.tipo===tipo);
+        const okM = (mandato==="Todos") || (r.mandato===mandato);
+        return okQ && okT && okM;
+      });
+    }
+
+    function kpis(rows){
+      const total = rows.length;
+      const completos = rows.filter(r=>r.mandato==="Completo").length;
+      const inter = rows.filter(r=>r.mandato==="Interrumpido").length;
+      const avg = total ? (rows.reduce((s,r)=>s+years(r),0)/total) : 0;
+      return { total, completos, inter, avg };
+    }
+
+    function byDecade(rows){
+      const map = new Map();
+      for(const r of rows){
+        const d = decade(r.inicio);
+        map.set(d, (map.get(d)||0) + 1);
+      }
+      const keys = [...map.keys()].sort((a,b)=>a-b);
+      return { labels: keys.map(k=>`${k}s`), values: keys.map(k=>map.get(k)) };
+    }
+
+    function conclusions(rows){
+      const k = kpis(rows);
+      const ratio = k.total ? (k.inter / k.total) : 0;
+
+      const byParty = new Map();
+      for(const r of rows){
+        const p = r.partido || "—";
+        byParty.set(p, (byParty.get(p)||0)+1);
+      }
+      const topParty = [...byParty.entries()].sort((a,b)=>b[1]-a[1])[0];
+
+      const c1 = k.total
+        ? `En el recorte seleccionado hay ${k.total} mandatos. Los interrumpidos representan ${(ratio*100).toFixed(1)}% (esto puede orientar una discusión sobre estabilidad institucional y cómo se define “interrupción”).`
+        : `No hay datos con los filtros actuales. Probá “Reset” o quitá filtros.`;
+
+      const c2 = topParty
+        ? `El partido/alianza con más mandatos en este recorte es "${topParty[0]}" (${topParty[1]}). Esto no implica causalidad: sirve para plantear preguntas y buscar evidencia adicional.`
+        : `—`;
+
+      document.getElementById("c1").textContent = c1;
+      document.getElementById("c2").textContent = c2;
+    }
+
+    function renderTimeline(rows){
+      const el = document.getElementById("timeline");
+      el.innerHTML = "";
+      const sorted = [...rows].sort((a,b)=>a.inicio-b.inicio);
+
+      for(const r of sorted){
+        const dotClass = r.mandato==="Completo" ? "ok" : "bad";
+        const dot2 = r.tipo==="Democrático" ? "neu" : "warning";
+        const item = document.createElement("div");
+        item.className = "tl-item";
+        item.innerHTML = `
+          <div class="tl-years">${r.inicio}–${r.fin}</div>
+          <div>
+            <p class="tl-title">${r.presidente}</p>
+            <div class="pill"><span class="dot ${dotClass}"></span> Mandato: <strong style="color:var(--text)">${r.mandato}</strong></div>
+            <div class="pill"><span class="dot neu"></span> Tipo: <strong style="color:var(--text)">${r.tipo}</strong></div>
+            <div class="muted small" style="margin-top:8px;">Partido: ${r.partido || "—"} · Duración: ${years(r)} años</div>
+          </div>
+        `;
+        el.appendChild(item);
+      }
+    }
+
+    // ====== CHARTS ======
+    let pieChart, barChart, lineChart;
+
+    function buildCharts(rows){
+      const ctxPie = document.getElementById("pieMandato");
+      const ctxBar = document.getElementById("barDuracion");
+      const ctxLine = document.getElementById("lineDecadas");
+
+      const k = kpis(rows);
+
+      // Pie
+      const pieData = {
+        labels: ["Completo","Interrumpido"],
+        datasets: [{
+          data: [k.completos, k.inter],
+          borderWidth: 1
+        }]
+      };
+
+      // Bar (top 10 by duration)
+      const sorted = [...rows].sort((a,b)=>years(b)-years(a)).slice(0, 10);
+      const barData = {
+        labels: sorted.map(r=>r.presidente),
+        datasets: [{
+          label: "Años",
+          data: sorted.map(r=>years(r)),
+          borderWidth: 1
+        }]
+      };
+
+      // Line by decade
+      const dec = byDecade(rows);
+      const lineData = {
+        labels: dec.labels,
+        datasets: [{
+          label: "Cantidad de mandatos",
+          data: dec.values,
+          tension: 0.25,
+          borderWidth: 2,
+          pointRadius: 3
+        }]
+      };
+
+      // Destroy previous if exists
+      [pieChart, barChart, lineChart].forEach(ch => ch && ch.destroy());
+
+      const baseOpts = {
+        responsive: true,
+        plugins:{
+          legend:{ labels:{ color:"#eaf2ff" } },
+          title:{ display:false }
+        }
+      };
+
+      pieChart = new Chart(ctxPie, {
+        type: "pie",
+        data: pieData,
+        options: baseOpts
+      });
+
+      barChart = new Chart(ctxBar, {
+        type: "bar",
+        data: barData,
+        options: {
+          ...baseOpts,
+          scales:{
+            x:{ ticks:{ color:"#9fb0c6" }, grid:{ color:"rgba(255,255,255,.06)" } },
+            y:{ ticks:{ color:"#9fb0c6" }, grid:{ color:"rgba(255,255,255,.06)" } }
+          }
+        }
+      });
+
+      lineChart = new Chart(ctxLine, {
+        type: "line",
+        data: lineData,
+        options: {
+          ...baseOpts,
+          scales:{
+            x:{ ticks:{ color:"#9fb0c6" }, grid:{ color:"rgba(255,255,255,.06)" } },
+            y:{ ticks:{ color:"#9fb0c6" }, grid:{ color:"rgba(255,255,255,.06)" }, beginAtZero:true }
+          }
+        }
+      });
+    }
+
+    function render(){
+      const rows = applyFilters();
+
+      // KPIs
+      const k = kpis(rows);
+      document.getElementById("kpi_total").textContent = fmt(k.total);
+      document.getElementById("kpi_completo").textContent = fmt(k.completos);
+      document.getElementById("kpi_interrumpido").textContent = fmt(k.inter);
+      document.getElementById("kpi_promedio").textContent = `${k.avg.toFixed(1)} años`;
+
+      // Charts + timeline + conclusions
+      buildCharts(rows);
+      renderTimeline(rows);
+      conclusions(rows);
+    }
+
+    // Events
+    ["q","tipo","mandato"].forEach(id=>{
+      document.getElementById(id).addEventListener("input", render);
+      document.getElementById(id).addEventListener("change", render);
+    });
+    document.getElementById("reset").addEventListener("click", ()=>{
+      document.getElementById("q").value = "";
+      document.getElementById("tipo").value = "Todos";
+      document.getElementById("mandato").value = "Todos";
+      render();
+    });
+
+    // Initial
+    render();
+  </script>
+</body>
+</html>
